@@ -1,23 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { WiCelsius, WiFahrenheit } from "react-icons/wi";
+import { useGlobalContext } from "./context";
+import AsideContainer from "./containers/AsideContainer";
+import MainContainer from "./containers/MainContainer";
 
 function App() {
+  const { convertTempUnit } = useGlobalContext();
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <div className="flex flex-col md:flex-row md:h-full">
+      <div className="temp-converter absolute top-[1rem] left-[1rem] md:left-[84%]">
+        <button
+          className="p-1 rounded-full bg-veryLightBlue mr-3"
+          onClick={() => convertTempUnit("metric")}
         >
-          Learn React
-        </a>
-      </header>
+          <WiCelsius size={30} color="#110E3C" className="text-bold" />
+        </button>
+        <button
+          className="p-1 rounded-full bg-lightBlue"
+          onClick={() => convertTempUnit("imperial")}
+        >
+          <WiFahrenheit size={30} color="#E7E7EB" className="text-bold" />
+        </button>
+      </div>
+      <AsideContainer />
+      <MainContainer />
     </div>
   );
 }
