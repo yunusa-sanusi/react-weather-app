@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useContext } from "react";
-import ClipLoader from "react-spinners/ClipLoader";
-import { daysOfWeek, monthsOfYear } from "./monthDay";
+import React, { useEffect, useContext, useReducer } from 'react';
+import ClipLoader from 'react-spinners/ClipLoader';
 
-const AppContext = React.createContext();
+import { initialState, ACTION_TYPES, weatherReducer } from './reducer';
+
+import { daysOfWeek, monthsOfYear } from './monthDay';
+
+const AppContext = React.createContext(initialState);
 
 export const AppProvider = ({ children }) => {
-  const [lat, setLat] = useState(0.0);
-  const [lon, setLon] = useState(0.0);
-  const [weatherData, setWeatherData] = useState([]);
-  const [location, setLocation] = useState({ state: "", country: "" });
-  const [loading, setLoading] = useState(true);
-  const [unit, setUnit] = useState("metric");
+  const [state, dispatch] = useReducer(weatherReducer, initialState);
+  const { weatherData, loading, location, lat, lon, unit } = state;
 
   const getWeatherData = async (url) => {
     try {
       const res = await fetch(url);
       const data = await res.json();
-      setWeatherData(data);
+      dispatch({
+        type: ACTION_TYPES.SET_WEATHER_DATA,
+        payload: { weatherData: data },
+      });
     } catch (error) {
       return (
         <div className="w-full h-screen flex jusitfy-center items-center loading">
@@ -31,15 +33,37 @@ export const AppProvider = ({ children }) => {
       const res = await fetch(url);
       const data = await res.json();
       const locationData = data[0];
-      setLocation({ state: locationData.state, country: locationData.country });
-      setLoading(false);
+      dispatch({
+        type: ACTION_TYPES.SET_LOCATION_NAME,
+        payload: {
+          location: {
+            state: locationData.state,
+            country: locationData.country,
+          },
+          loading: false,
+        },
+      });
     } catch (error) {
-      setLocation({ state: "", country: "" });
+      dispatch({
+        type: ACTION_TYPES.SET_LOCATION_NAME,
+        payload: { location: { state: '', country: '' }, loading: false },
+      });
     }
   };
 
+  const getCurrentLocation = () => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      dispatch({
+        type: ACTION_TYPES.SET_CURRENT_LOCATION,
+        payload: { lat, lon },
+      });
+    });
+  };
+
   const convertTempUnit = (tempUnit) => {
-    return setUnit(tempUnit);
+    dispatch({ type: ACTION_TYPES.SET_UNIT, payload: { unit: tempUnit } });
   };
 
   const formatDate = (opwFormat, timezoneOffset) => {
@@ -51,10 +75,7 @@ export const AppProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      setLat(position.coords.latitude);
-      setLon(position.coords.longitude);
-    });
+    getCurrentLocation();
 
     const weatherApiUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=${process.env.REACT_APP_WEATHER_API_KEY}&units=${unit}`;
 
@@ -67,14 +88,20 @@ export const AppProvider = ({ children }) => {
   if (loading) {
     return (
       <div className="w-full h-screen flex jusitfy-center items-center loading">
-        <ClipLoader color={"#E7E7EB"} loading={loading} size={100} />
+        <ClipLoader color={'#E7E7EB'} loading={loading} size={100} />
       </div>
     );
   }
 
   return (
     <AppContext.Provider
-      value={{ location, unit, weatherData, convertTempUnit, formatDate }}
+      value={{
+        location,
+        unit,
+        weatherData,
+        convertTempUnit,
+        formatDate,
+      }}
     >
       {children}
     </AppContext.Provider>
